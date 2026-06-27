@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npm run *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git commit -m 'Fix wallet query: remove invalid joined_at order column *)"
     ]
   }
 }

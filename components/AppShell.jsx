@@ -124,8 +124,8 @@ export default function AppShell({ session, inviteToken }) {
     const isHousehold = !!workspace?.id;
     const [wR, tR] = await Promise.all([
       isHousehold
-        ? supabase.from("wallets").select("*").eq("household_id", workspace.id).order("joined_at")
-        : supabase.from("wallets").select("*").eq("user_id", user.id).is("household_id", null).order("joined_at"),
+        ? supabase.from("wallets").select("*").eq("household_id", workspace.id)
+        : supabase.from("wallets").select("*").eq("user_id", user.id).is("household_id", null),
       isHousehold
         ? supabase.from("transactions").select("*, wallets!wallet_id(name,icon,color,type)").eq("household_id", workspace.id).order("date", { ascending:false }).limit(300)
         : supabase.from("transactions").select("*, wallets!wallet_id(name,icon,color,type)").eq("user_id", user.id).is("household_id", null).order("date", { ascending:false }).limit(300),
@@ -140,7 +140,7 @@ export default function AppShell({ session, inviteToken }) {
     const q = isHousehold
       ? supabase.from("wallets").select("*").eq("household_id", workspace.id)
       : supabase.from("wallets").select("*").eq("user_id", user.id).is("household_id", null);
-    const { data } = await q.order("joined_at");
+    const { data } = await q;
     if (data) setWallets(data);
   }
 
