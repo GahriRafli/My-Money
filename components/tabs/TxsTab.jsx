@@ -202,7 +202,7 @@ export default function TxsTab({ txs, month, setMonth, summary, loading, onAdd, 
       })}
 
       {/* FAB */}
-      <button onClick={onAdd} className="fab"
+      <button onClick={onAdd} className="fab fab-fixed"
         style={{ position:"fixed", right:20, bottom:"calc(72px + env(safe-area-inset-bottom,0px))", zIndex:40 }}
         aria-label="Tambah">
         <Plus size={24} color="#fff" />
