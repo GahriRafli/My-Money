@@ -255,7 +255,7 @@ export default function AppShell({ session, inviteToken }) {
 
   const hasHouseholds = !isGuest && households.length > 0;
 
-  const { subscribed: pushSubscribed, loading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } =
+  const { supported: pushSupported, subscribed: pushSubscribed, loading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } =
     usePushNotification(user, workspace?.id || null);
 
   // Content renderer
@@ -282,7 +282,7 @@ export default function AppShell({ session, inviteToken }) {
           <span>{workspace ? workspace.name : "Personal"}</span>
           <ChevronDown size={13} />
         </button>
-        {workspace && (
+        {workspace && pushSupported && (
           <button
             onClick={() => pushSubscribed ? pushUnsubscribe() : pushSubscribe()}
             disabled={pushLoading}
