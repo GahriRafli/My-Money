@@ -39,8 +39,8 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
       : await supabase.auth.signUp({ email:form.email, password:form.password, options:{ data:{ full_name:form.name } } });
     setBusy(false);
     if (res.error) {
-      const msg = res.error.message || res.error.error_description || JSON.stringify(res.error);
-      setMsg({ text: msg || "Terjadi kesalahan, coba lagi.", ok:false });
+      const errText = res.error.message || res.error.error_description || res.error.status || "Terjadi kesalahan, coba lagi.";
+      setMsg({ text: String(errText), ok:false });
       return;
     }
     if (mode === "register") setMsg({ text:"Akun dibuat! Cek email konfirmasi, lalu masuk.", ok:true });
