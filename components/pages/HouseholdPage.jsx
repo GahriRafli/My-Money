@@ -28,30 +28,54 @@ export default function HouseholdPage({ user, onBack }) {
 
   async function load() {
     setLoading(true);
+
     // Owned households
     const { data: owned } = await supabase.from("households").select("*").eq("owner_id", user.id);
-    // Member-of households
-    const { data: memberships } = await supabase.from("household_members")
-      .select("*, households(*)").eq("user_id", user.id).eq("status","active");
 
-    const memberOf = (memberships || []).map(m => ({ ...m.households, isOwner: false, myAccess: m.access }));
+    // Member-of: ambil membership rows dulu, lalu fetch household data terpisah
+    const { data: memberships } = await supabase.from("household_members")
+      .select("*").eq("user_id", user.id).eq("status", "active");
+
+    const ownedIds = (owned || []).map(h => h.id);
+    const memberIds = (memberships || [])
+      .map(m => m.household_id)
+      .filter(id => !ownedIds.includes(id));
+
+    let memberHouseholds = [];
+    if (memberIds.length > 0) {
+      const { data: hhData } = await supabase.from("households").select("*").in("id", memberIds);
+      memberHouseholds = (hhData || []).map(h => {
+        const m = memberships.find(mb => mb.household_id === h.id);
+        return { ...h, isOwner: false, myAccess: m?.access };
+      });
+    }
+
     const all = [
       ...(owned || []).map(h => ({ ...h, isOwner: true })),
-      ...memberOf.filter(h => !(owned||[]).find(o => o.id === h.id)),
+      ...memberHouseholds,
     ];
     setHouseholds(all);
     if (all.length > 0 && !active) setActive(all[0]);
 
-    // Pending invites
-    const { data: invites } = await supabase.from("household_members")
-      .select("*, households(name,owner_id)").eq("email", user.email).eq("status","pending");
-    setPendingInv(invites || []);
+    // Pending invites: fetch tanpa join lalu fetch household name terpisah
+    const { data: inviteRows } = await supabase.from("household_members")
+      .select("*").eq("email", user.email).eq("status", "pending");
+
+    if (inviteRows && inviteRows.length > 0) {
+      const inviteHhIds = inviteRows.map(i => i.household_id);
+      const { data: inviteHh } = await supabase.from("households").select("id,name,owner_id").in("id", inviteHhIds);
+      const hhMap = Object.fromEntries((inviteHh || []).map(h => [h.id, h]));
+      setPendingInv(inviteRows.map(i => ({ ...i, households: hhMap[i.household_id] || null })));
+    } else {
+      setPendingInv([]);
+    }
+
     setLoading(false);
   }
 
   async function loadMembers(hhId) {
     const { data } = await supabase.from("household_members")
-      .select("*, profiles(full_name,avatar_url)").eq("household_id", hhId).order("joined_at");
+      .select("*").eq("household_id", hhId).order("joined_at");
     setMembers(data || []);
   }
 
