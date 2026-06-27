@@ -144,7 +144,7 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
         )}
 
         <p style={{ textAlign:"center", fontSize:11, color:"var(--sub)", marginTop:20 }}>
-          My Money v1.0.0 · Next.js + Supabase
+          My Money v1.0.0
         </p>
       </div>
     </div>
