@@ -330,15 +330,31 @@ function InviteBanner({ token, user, onDone, onDismiss }) {
     if (!user) { onDismiss(); return; }
     setJoining(true);
     const { error } = await supabase.from("household_members")
-      .update({ user_id: user.id, status:"active", joined_at: new Date().toISOString() })
-      .eq("invite_token", token);
+      .update({
+        user_id: user.id,
+        email: user.email,
+        status: "active",
+        joined_at: new Date().toISOString(),
+      })
+      .eq("invite_token", token)
+      .eq("status", "pending");
     setJoining(false);
     if (error) onDone("Gagal bergabung: " + error.message);
     else onDone(`Berhasil bergabung ke "${info?.households?.name}"! 🎉`);
   }
 
   if (loading) return null;
-  if (!info) return null;
+  if (!info) return (
+    <div style={{
+      position:"fixed", bottom:90, left:"50%", transform:"translateX(-50%)",
+      zIndex:9999, padding:"12px 20px", borderRadius:14,
+      background:"var(--expense)", color:"#fff", fontSize:13, fontWeight:600,
+      textAlign:"center", boxShadow:"0 8px 32px rgba(0,0,0,.3)", maxWidth:"90vw",
+    }}>
+      Link undangan tidak valid atau sudah digunakan.
+      <button onClick={onDismiss} style={{ marginLeft:12, fontWeight:800, color:"#fff" }}>✕</button>
+    </div>
+  );
 
   return (
     <div style={{

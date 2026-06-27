@@ -110,9 +110,13 @@ export default function HouseholdPage({ user, onBack }) {
 
   async function respondInvite(inv, accept) {
     if (accept) {
-      await supabase.from("household_members").update({
-        user_id: user.id, status:"active", joined_at: new Date().toISOString(),
+      const { error } = await supabase.from("household_members").update({
+        user_id: user.id,
+        email: user.email,
+        status: "active",
+        joined_at: new Date().toISOString(),
       }).eq("id", inv.id);
+      if (error) { showToast("Gagal terima undangan: " + error.message, "error"); return; }
     } else {
       await supabase.from("household_members").update({ status:"rejected" }).eq("id", inv.id);
     }
