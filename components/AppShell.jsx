@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { MoreHorizontal, TrendingUp, Wallet } from "lucide-react";
+import { ChevronDown, MoreHorizontal, TrendingUp, Wallet } from "lucide-react";
 import { supabase, hasSupabaseConfig } from "@/lib/supabase";
 import { monthKey } from "@/lib/utils";
 import { EXP_CATS, INC_CATS } from "@/lib/constants";
@@ -43,7 +43,10 @@ export default function AppShell({ session, inviteToken }) {
   const [editTx,    setEditTx]    = useState(null);
   const [month,     setMonth]     = useState(new Date());
   const [theme,     setTheme]     = useState("dark");
-  const [invite,    setInvite]    = useState(inviteToken); // pending invite token
+  const [invite,      setInvite]      = useState(inviteToken);
+  const [workspace,   setWorkspace]   = useState(null);   // null=personal | {id,name,access}
+  const [households,  setHouseholds]  = useState([]);
+  const [showWsModal, setShowWsModal] = useState(false);
 
   // Data
   const [wallets,   setWallets]   = useState([]);
@@ -79,32 +82,65 @@ export default function AppShell({ session, inviteToken }) {
   // Load data from Supabase
   useEffect(() => { if (user && hasSupabaseConfig) loadAll(); }, [user?.id]);
 
+  // Reload data when workspace changes
+  useEffect(() => { if (user && hasSupabaseConfig) loadWorkspaceData(); }, [workspace?.id]);
+
   async function loadAll() {
     setLoading(true);
-    const [pR, wR, tR, bR, gR, rR] = await Promise.all([
+    const [pR, bR, gR, rR] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-      supabase.from("wallets").select("*").eq("user_id", user.id).order("created_at"),
-      supabase.from("transactions")
-        .select("*, wallets!wallet_id(name,icon,color,type)")
-        .eq("user_id", user.id).order("date", { ascending:false }).limit(300),
       supabase.from("budgets").select("*, categories(name,icon,color)").eq("user_id", user.id),
-      supabase.from("savings_goals").select("*").eq("user_id", user.id).order("created_at"),
+      supabase.from("savings_goals").select("*").eq("user_id", user.id).order("saved"),
       supabase.from("recurring_rules")
         .select("*, categories(name,icon,color), wallets(name,icon)")
         .eq("user_id", user.id).order("next_due"),
     ]);
     setProfile(pR.data);
-    setWallets(wR.data || []);
-    setTxs((tR.data || []).map(enrichTx));
     setBudgets(bR.data || []);
     setGoals(gR.data || []);
     setRecurring(rR.data || []);
+
+    // Load households list
+    const { data: ownedHh } = await supabase.from("households").select("*").eq("owner_id", user.id);
+    const { data: memberRows } = await supabase.from("household_members").select("*").eq("user_id", user.id).eq("status","active");
+    const memberIds = (memberRows || []).map(m => m.household_id).filter(id => !(ownedHh||[]).find(h => h.id === id));
+    let memberHh = [];
+    if (memberIds.length > 0) {
+      const { data: hhData } = await supabase.from("households").select("*").in("id", memberIds);
+      memberHh = (hhData || []).map(h => {
+        const m = memberRows.find(mb => mb.household_id === h.id);
+        return { ...h, myAccess: m?.access };
+      });
+    }
+    const allHh = [...(ownedHh||[]).map(h=>({...h, myAccess:"full"})), ...memberHh];
+    setHouseholds(allHh);
+
+    await loadWorkspaceData();
     setLoading(false);
+  }
+
+  async function loadWorkspaceData() {
+    if (!user) return;
+    const isHousehold = !!workspace?.id;
+    const [wR, tR] = await Promise.all([
+      isHousehold
+        ? supabase.from("wallets").select("*").eq("household_id", workspace.id).order("joined_at")
+        : supabase.from("wallets").select("*").eq("user_id", user.id).is("household_id", null).order("joined_at"),
+      isHousehold
+        ? supabase.from("transactions").select("*, wallets!wallet_id(name,icon,color,type)").eq("household_id", workspace.id).order("date", { ascending:false }).limit(300)
+        : supabase.from("transactions").select("*, wallets!wallet_id(name,icon,color,type)").eq("user_id", user.id).is("household_id", null).order("date", { ascending:false }).limit(300),
+    ]);
+    setWallets(wR.data || []);
+    setTxs((tR.data || []).map(enrichTx));
   }
 
   async function refreshWallets() {
     if (!user) return;
-    const { data } = await supabase.from("wallets").select("*").eq("user_id", user.id).order("created_at");
+    const isHousehold = !!workspace?.id;
+    const q = isHousehold
+      ? supabase.from("wallets").select("*").eq("household_id", workspace.id)
+      : supabase.from("wallets").select("*").eq("user_id", user.id).is("household_id", null);
+    const { data } = await q.order("joined_at");
     if (data) setWallets(data);
   }
 
@@ -138,6 +174,7 @@ export default function AppShell({ session, inviteToken }) {
       note:       tx.note     || null,
       date:       tx.date,
     };
+    if (workspace?.id) payload.household_id = workspace.id;
     if (tx.category_id)  payload.category_id  = tx.category_id;
     if (tx.to_wallet_id) payload.to_wallet_id = tx.to_wallet_id;
 
@@ -215,6 +252,8 @@ export default function AppShell({ session, inviteToken }) {
     setSubPage(page);
   }
 
+  const hasHouseholds = !isGuest && households.length > 0;
+
   // Content renderer
   function renderContent() {
     // Sub-pages (full-screen, no tab bar override)
@@ -224,10 +263,23 @@ export default function AppShell({ session, inviteToken }) {
     if (subPage === "household") return <HouseholdPage  user={user}                                                        onBack={() => setSubPage(null)} />;
     if (subPage === "theme")     return <ThemePage      currentTheme={theme} onTheme={handleTheme}                         onBack={() => setSubPage(null)} />;
 
+    const wsBanner = hasHouseholds ? (
+      <button onClick={() => setShowWsModal(true)} style={{
+        width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+        padding:"8px 16px", background: workspace ? "rgba(99,102,241,.12)" : "var(--surface)",
+        borderBottom:"1px solid var(--border)", fontSize:12, fontWeight:700,
+        color: workspace ? "var(--brand)" : "var(--sub)",
+      }}>
+        <span>{workspace ? "🏠" : "👤"}</span>
+        <span>{workspace ? workspace.name : "Personal"}</span>
+        <ChevronDown size={13} />
+      </button>
+    ) : null;
+
     // Main tabs
-    if (tab === "txs")      return <TxsTab      txs={txs}      month={month} setMonth={setMonth} summary={summary} loading={loading} onAdd={() => setShowAdd(true)} onEdit={tx => { setEditTx(tx); setShowAdd(true); }} onDelete={deleteTx} onStar={starTx} isGuest={isGuest} onGoMore={() => setTab("more")} />;
-    if (tab === "stats")    return <StatsTab    txs={txs}      month={month} setMonth={setMonth} summary={summary} loading={loading} budgets={budgets} />;
-    if (tab === "accounts") return <AccountsTab wallets={wallets} loading={loading} user={user} onRefresh={loadAll} />;
+    if (tab === "txs")      return <>{wsBanner}<TxsTab      txs={txs}      month={month} setMonth={setMonth} summary={summary} loading={loading} onAdd={() => setShowAdd(true)} onEdit={tx => { setEditTx(tx); setShowAdd(true); }} onDelete={deleteTx} onStar={starTx} isGuest={isGuest} onGoMore={() => setTab("more")} /></>;
+    if (tab === "stats")    return <>{wsBanner}<StatsTab    txs={txs}      month={month} setMonth={setMonth} summary={summary} loading={loading} budgets={budgets} /></>;
+    if (tab === "accounts") return <>{wsBanner}<AccountsTab wallets={wallets} loading={loading} user={user} workspace={workspace} onRefresh={loadWorkspaceData} /></>;
     if (tab === "more")     return <MoreTab     user={user}    profile={profile} isGuest={isGuest} onNavigate={navigate} />;
   }
 
@@ -258,6 +310,48 @@ export default function AppShell({ session, inviteToken }) {
             })}
           </div>
         </nav>
+      )}
+
+      {/* Workspace switcher modal */}
+      {showWsModal && (
+        <div className="modal-backdrop" onClick={e => e.target===e.currentTarget && setShowWsModal(false)}>
+          <div className="modal-sheet" style={{ padding:"20px 16px calc(env(safe-area-inset-bottom,0px) + 20px)" }}>
+            <p style={{ fontSize:16, fontWeight:800, marginBottom:16 }}>Pilih Workspace</p>
+            {/* Personal */}
+            <button onClick={() => { setWorkspace(null); setShowWsModal(false); }}
+              style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"14px",
+                borderRadius:14, marginBottom:10, textAlign:"left",
+                background: !workspace ? "rgba(99,102,241,.1)" : "var(--surface2)",
+                border:`2px solid ${!workspace ? "var(--brand)" : "var(--border)"}` }}>
+              <span style={{ fontSize:28 }}>👤</span>
+              <div>
+                <p style={{ fontSize:14, fontWeight:700, color: !workspace ? "var(--brand)" : "var(--text)" }}>Personal</p>
+                <p style={{ fontSize:12, color:"var(--sub)" }}>Data keuangan pribadimu</p>
+              </div>
+              {!workspace && <span style={{ marginLeft:"auto", fontSize:18 }}>✓</span>}
+            </button>
+            {/* Households */}
+            {households.map(hh => {
+              const active = workspace?.id === hh.id;
+              return (
+                <button key={hh.id} onClick={() => { setWorkspace({ id:hh.id, name:hh.name, access: hh.myAccess }); setShowWsModal(false); }}
+                  style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"14px",
+                    borderRadius:14, marginBottom:10, textAlign:"left",
+                    background: active ? "rgba(99,102,241,.1)" : "var(--surface2)",
+                    border:`2px solid ${active ? "var(--brand)" : "var(--border)"}` }}>
+                  <span style={{ fontSize:28 }}>🏠</span>
+                  <div>
+                    <p style={{ fontSize:14, fontWeight:700, color: active ? "var(--brand)" : "var(--text)" }}>{hh.name}</p>
+                    <p style={{ fontSize:12, color:"var(--sub)" }}>
+                      {hh.owner_id === user?.id ? "Owner" : hh.myAccess === "full" ? "Full Access" : "View Only"}
+                    </p>
+                  </div>
+                  {active && <span style={{ marginLeft:"auto", fontSize:18 }}>✓</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* Invite banner */}

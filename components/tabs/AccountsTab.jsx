@@ -10,7 +10,7 @@ import { useCustomStore } from "@/lib/useCustomStore";
 import { supabase } from "@/lib/supabase";
 import { Empty, SkelRows } from "./TxsTab";
 
-export default function AccountsTab({ wallets, loading, user, onRefresh }) {
+export default function AccountsTab({ wallets, loading, user, workspace, onRefresh }) {
   const [hideAmt,  setHideAmt]  = useState(false);
   const [showAdd,  setShowAdd]  = useState(false);
   const [editing,  setEditing]  = useState(null);
@@ -117,8 +117,8 @@ export default function AccountsTab({ wallets, loading, user, onRefresh }) {
         />
       )}
 
-      {showAdd && <WalletModal user={user} onClose={() => setShowAdd(false)} onSaved={onRefresh} />}
-      {editing  && <WalletModal user={user} initial={editing} onClose={() => setEditing(null)} onSaved={onRefresh} />}
+      {showAdd && <WalletModal user={user} workspace={workspace} onClose={() => setShowAdd(false)} onSaved={onRefresh} />}
+      {editing  && <WalletModal user={user} workspace={workspace} initial={editing} onClose={() => setEditing(null)} onSaved={onRefresh} />}
     </div>
   );
 }
@@ -171,7 +171,7 @@ function WalletActionSheet({ wallet, hideAmt, onClose, onEdit, onDelete }) {
   );
 }
 
-function WalletModal({ user, initial, onClose, onSaved }) {
+function WalletModal({ user, workspace, initial, onClose, onSaved }) {
   const isEdit = !!initial?.id;
   const [name,       setName]       = useState(initial?.name    || "");
   const [type,       setType]       = useState(initial?.type    || "cash");
@@ -218,11 +218,13 @@ function WalletModal({ user, initial, onClose, onSaved }) {
     } else {
       if (!user) { onClose(); return; }
       const typeInfo = allTypes.find(t => t.id === type);
-      const { error } = await supabase.from("wallets").insert({
+      const walletPayload = {
         user_id: user.id, name, type,
         icon: typeInfo?.icon || "💳",
         balance: newBalance, is_default: false,
-      });
+      };
+      if (workspace?.id) walletPayload.household_id = workspace.id;
+      const { error } = await supabase.from("wallets").insert(walletPayload);
       if (error) { setErr(error.message); setBusy(false); return; }
     }
 
