@@ -23,6 +23,17 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
     e.preventDefault();
     if (!hasSupabaseConfig) { setMsg({ text:"Konfigurasi Supabase belum ada.", ok:false }); return; }
     setBusy(true); setMsg({ text:"", ok:false });
+
+    if (mode === "forgot") {
+      const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
+        redirectTo: `${window.location.origin}/?reset=1`,
+      });
+      setBusy(false);
+      if (error) { setMsg({ text: error.message, ok:false }); return; }
+      setMsg({ text:"Link reset password sudah dikirim ke email kamu. Cek inbox / spam.", ok:true });
+      return;
+    }
+
     const res = mode === "login"
       ? await supabase.auth.signInWithPassword({ email:form.email, password:form.password })
       : await supabase.auth.signUp({ email:form.email, password:form.password, options:{ data:{ full_name:form.name } } });
@@ -76,10 +87,21 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
                 <p style={{ fontSize:12, color:"var(--sub)", marginTop:2 }}>Mode tamu aktif. Data hilang saat reload.</p>
               </div>
             </div>
-            <div className="pill-toggle" style={{ marginBottom:16 }}>
-              <button className={`pill-btn${mode==="login"?" active":""}`} onClick={() => setMode("login")}>Masuk</button>
-              <button className={`pill-btn${mode==="register"?" active":""}`} onClick={() => setMode("register")}>Daftar</button>
-            </div>
+            {mode !== "forgot" && (
+              <div className="pill-toggle" style={{ marginBottom:16 }}>
+                <button className={`pill-btn${mode==="login"?" active":""}`} onClick={() => { setMode("login"); setMsg({text:"",ok:false}); }}>Masuk</button>
+                <button className={`pill-btn${mode==="register"?" active":""}`} onClick={() => { setMode("register"); setMsg({text:"",ok:false}); }}>Daftar</button>
+              </div>
+            )}
+            {mode === "forgot" && (
+              <div style={{ background:"rgba(99,102,241,.1)", border:"1px solid rgba(99,102,241,.2)",
+                borderRadius:12, padding:"12px 14px", marginBottom:14 }}>
+                <p style={{ fontSize:13, fontWeight:700, color:"var(--brand)" }}>Reset Password</p>
+                <p style={{ fontSize:12, color:"var(--sub)", marginTop:3 }}>
+                  Masukkan email akunmu, kami akan kirim link reset password.
+                </p>
+              </div>
+            )}
             <form onSubmit={submit} style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:20 }}>
               {mode === "register" && (
                 <DField label="Nama" icon={<UserRound size={17} />}>
@@ -91,13 +113,23 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
                 <input className="field-input" type="email" placeholder="nama@email.com" required
                   value={form.email} onChange={e => setForm({...form,email:e.target.value})} />
               </DField>
-              <DField label="Password" icon={<Lock size={17} />}>
-                <input className="field-input" type={showPw?"text":"password"} placeholder="Min. 6 karakter" required
-                  value={form.password} onChange={e => setForm({...form,password:e.target.value})} />
-                <button type="button" onClick={() => setShowPw(!showPw)} style={{ marginRight:12, color:"var(--sub)" }}>
-                  {showPw ? <EyeOff size={17}/> : <Eye size={17}/>}
-                </button>
-              </DField>
+              {mode !== "forgot" && (
+                <DField label="Password" icon={<Lock size={17} />}>
+                  <input className="field-input" type={showPw?"text":"password"} placeholder="Min. 6 karakter" required
+                    value={form.password} onChange={e => setForm({...form,password:e.target.value})} />
+                  <button type="button" onClick={() => setShowPw(!showPw)} style={{ marginRight:12, color:"var(--sub)" }}>
+                    {showPw ? <EyeOff size={17}/> : <Eye size={17}/>}
+                  </button>
+                </DField>
+              )}
+              {mode === "login" && (
+                <div style={{ textAlign:"right", marginTop:-4 }}>
+                  <button type="button" onClick={() => { setMode("forgot"); setMsg({text:"",ok:false}); }}
+                    style={{ fontSize:12, color:"var(--brand)", fontWeight:600 }}>
+                    Lupa password?
+                  </button>
+                </div>
+              )}
               {msg.text && (
                 <p style={{ fontSize:13, borderRadius:12, padding:"10px 14px",
                   background: msg.ok?"rgba(0,184,148,.15)":"rgba(255,92,92,.15)",
@@ -107,9 +139,15 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
                 style={{ height:50, borderRadius:14, background:"var(--accent)", color:"#fff",
                   fontWeight:800, fontSize:15, display:"flex", alignItems:"center",
                   justifyContent:"center", gap:8, boxShadow:"0 6px 20px rgba(255,109,78,.35)" }}>
-                {busy?"Memproses...":(mode==="login"?"Masuk":"Buat Akun")}
+                {busy ? "Memproses..." : mode==="login" ? "Masuk" : mode==="register" ? "Buat Akun" : "Kirim Link Reset"}
                 {!busy && <ArrowRight size={17}/>}
               </button>
+              {mode === "forgot" && (
+                <button type="button" onClick={() => { setMode("login"); setMsg({text:"",ok:false}); }}
+                  style={{ fontSize:13, color:"var(--sub)", textAlign:"center", marginTop:4 }}>
+                  ← Kembali ke login
+                </button>
+              )}
             </form>
           </>
         )}
