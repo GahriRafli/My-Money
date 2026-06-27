@@ -99,8 +99,6 @@ input, select, textarea { outline: none; }
 .topbar {
   display: flex; align-items: center;
   height: 52px; padding: 0 16px; gap: 12px;
-  padding-top: env(safe-area-inset-top, 0px);
-  height: calc(52px + env(safe-area-inset-top, 0px));
   background: var(--bg); border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 30;
 }
@@ -161,6 +159,8 @@ textarea.field-input { height: auto; padding: 12px 14px; resize: none; }
   position: relative;
   background: var(--bg);
   overflow-x: hidden;
+  /* PWA: push content below status bar */
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Desktop: sidebar + content layout */
@@ -193,7 +193,8 @@ textarea.field-input { height: auto; padding: 12px 14px; resize: none; }
 
   .app-frame > div { padding-bottom: 0 !important; }
 
-  .topbar { padding-top: 0 !important; height: 52px !important; }
+  /* Desktop: no safe-area padding needed */
+  .app-frame { padding-top: 0; }
 
   .fab-fixed {
     position: fixed !important;

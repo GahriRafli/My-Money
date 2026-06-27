@@ -90,9 +90,9 @@ export default function AppShell({ session, inviteToken }) {
     const [pR, bR, gR, rR] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
       supabase.from("budgets").select("*, categories(name,icon,color)").eq("user_id", user.id),
-      supabase.from("savings_goals").select("*").eq("user_id", user.id).order("saved"),
+      supabase.from("savings_goals").select("*").eq("user_id", user.id),
       supabase.from("recurring_rules")
-        .select("*, categories(name,icon,color), wallets(name,icon)")
+        .select("*, wallets(name,icon)")
         .eq("user_id", user.id).order("next_due"),
     ]);
     setProfile(pR.data);
