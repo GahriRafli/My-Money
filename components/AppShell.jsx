@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, MoreHorizontal, TrendingUp, Wallet } from "lucide-react";
+import { Bell, BellOff, ChevronDown, MoreHorizontal, TrendingUp, Wallet } from "lucide-react";
 import { supabase, hasSupabaseConfig } from "@/lib/supabase";
+import { usePushNotification } from "@/lib/usePushNotification";
 import { monthKey } from "@/lib/utils";
 import { EXP_CATS, INC_CATS } from "@/lib/constants";
 
@@ -254,6 +255,9 @@ export default function AppShell({ session, inviteToken }) {
 
   const hasHouseholds = !isGuest && households.length > 0;
 
+  const { subscribed: pushSubscribed, loading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } =
+    usePushNotification(user, workspace?.id || null);
+
   // Content renderer
   function renderContent() {
     // Sub-pages (full-screen, no tab bar override)
@@ -264,16 +268,31 @@ export default function AppShell({ session, inviteToken }) {
     if (subPage === "theme")     return <ThemePage      currentTheme={theme} onTheme={handleTheme}                         onBack={() => setSubPage(null)} />;
 
     const wsBanner = hasHouseholds ? (
-      <button onClick={() => setShowWsModal(true)} style={{
-        width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-        padding:"8px 16px", background: workspace ? "rgba(99,102,241,.12)" : "var(--surface)",
-        borderBottom:"1px solid var(--border)", fontSize:12, fontWeight:700,
-        color: workspace ? "var(--brand)" : "var(--sub)",
+      <div style={{
+        display:"flex", alignItems:"center",
+        background: workspace ? "rgba(99,102,241,.12)" : "var(--surface)",
+        borderBottom:"1px solid var(--border)",
       }}>
-        <span>{workspace ? "🏠" : "👤"}</span>
-        <span>{workspace ? workspace.name : "Personal"}</span>
-        <ChevronDown size={13} />
-      </button>
+        <button onClick={() => setShowWsModal(true)} style={{
+          flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+          padding:"8px 16px", fontSize:12, fontWeight:700,
+          color: workspace ? "var(--brand)" : "var(--sub)",
+        }}>
+          <span>{workspace ? "🏠" : "👤"}</span>
+          <span>{workspace ? workspace.name : "Personal"}</span>
+          <ChevronDown size={13} />
+        </button>
+        {workspace && (
+          <button
+            onClick={() => pushSubscribed ? pushUnsubscribe() : pushSubscribe()}
+            disabled={pushLoading}
+            title={pushSubscribed ? "Matikan notifikasi" : "Aktifkan notifikasi"}
+            style={{ padding:"8px 14px", color: pushSubscribed ? "var(--brand)" : "var(--sub)",
+              opacity: pushLoading ? 0.5 : 1 }}>
+            {pushSubscribed ? <Bell size={16}/> : <BellOff size={16}/>}
+          </button>
+        )}
+      </div>
     ) : null;
 
     // Main tabs
