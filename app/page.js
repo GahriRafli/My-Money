@@ -2,25 +2,35 @@
 
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import ResetPasswordPage from "@/components/ResetPasswordPage";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
 export default function HomePage() {
-  const [session,     setSession]     = useState(undefined);
-  const [inviteToken, setInviteToken] = useState(null);
+  const [session,      setSession]      = useState(undefined);
+  const [inviteToken,  setInviteToken]  = useState(null);
+  const [isRecovery,   setIsRecovery]   = useState(false);
 
   useEffect(() => {
-    // Check for invite token in URL
     const params = new URLSearchParams(window.location.search);
     const token  = params.get("invite");
     if (token) {
       setInviteToken(token);
-      // Clean URL without reload
       window.history.replaceState({}, "", window.location.pathname);
     }
 
     if (!hasSupabaseConfig) { setSession(null); return; }
+
     supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s ?? null));
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsRecovery(true);
+        setSession(s ?? null);
+      } else {
+        setIsRecovery(false);
+        setSession(s ?? null);
+      }
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -32,6 +42,10 @@ export default function HomePage() {
           animation:"spin 0.7s linear infinite" }} />
       </div>
     );
+  }
+
+  if (isRecovery) {
+    return <ResetPasswordPage onDone={() => { setIsRecovery(false); setSession(null); }} />;
   }
 
   return <AppShell session={session} inviteToken={inviteToken} />;
