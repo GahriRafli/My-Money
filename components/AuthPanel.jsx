@@ -40,8 +40,9 @@ export default function AuthPanel() {
     setLoading(true);
 
     if (mode === "forgot") {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
-        redirectTo: `${window.location.origin}/?reset=1`,
+        redirectTo: `${siteUrl}/?reset=1`,
       });
       setLoading(false);
       if (error) { showMsg(error.message); return; }

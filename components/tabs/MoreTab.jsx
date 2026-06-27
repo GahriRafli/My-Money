@@ -25,8 +25,9 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
     setBusy(true); setMsg({ text:"", ok:false });
 
     if (mode === "forgot") {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
-        redirectTo: `${window.location.origin}/?reset=1`,
+        redirectTo: `${siteUrl}/?reset=1`,
       });
       setBusy(false);
       if (error) { setMsg({ text: error.message, ok:false }); return; }
