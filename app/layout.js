@@ -37,14 +37,6 @@ export default function RootLayout({ children }) {
       <body>
         <PwaRegister />
         {children}
-        <div className="desktop-hint">
-          <div>
-            <p style={{ fontSize:12, color:"rgba(255,255,255,0.3)", marginBottom:8, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase" }}>My Money</p>
-            <h1>Keuangan<br/>Bersama,<br/>Lebih Mudah.</h1>
-          </div>
-          <p>Catat pengeluaran, kelola budget, dan pantau keuangan bersama keluarga atau teman.</p>
-          <span className="badge-pwa">📱 Install sebagai PWA</span>
-        </div>
       </body>
     </html>
   );

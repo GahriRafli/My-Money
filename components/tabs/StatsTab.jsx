@@ -65,7 +65,7 @@ export default function StatsTab({ txs, budgets = [], month, setMonth, loading }
   return (
     <div>
       {/* Topbar with sub-tabs */}
-      <div className="topbar" style={{ padding:"0 14px", gap:0 }}>
+      <div className="topbar" style={{ paddingLeft:"14px", paddingRight:"14px", gap:0 }}>
         {[["stats","Stats"],["budget","Budget"],["note","Catatan"]].map(([id,label]) => (
           <button key={id} onClick={() => setSubtab(id)}
             style={{ padding:"0 16px", height:"100%", fontSize:14,

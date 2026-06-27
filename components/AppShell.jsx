@@ -283,34 +283,112 @@ export default function AppShell({ session, inviteToken }) {
     if (tab === "more")     return <MoreTab     user={user}    profile={profile} isGuest={isGuest} onNavigate={navigate} />;
   }
 
-  return (
-    <div className="app-frame">
-      <div style={{ paddingBottom: subPage ? 0 : "calc(60px + env(safe-area-inset-bottom,0px))" }}>
-        {renderContent()}
-      </div>
+  // Sidebar nav items for desktop
+  const NAV_ITEMS = [
+    { id:"txs",      emoji:"📅", label:"Transaksi",  onTab: () => { setTab("txs"); setMonth(new Date()); setSubPage(null); } },
+    { id:"stats",    Icon: TrendingUp, label:"Statistik",  onTab: () => { setTab("stats"); setMonth(new Date()); setSubPage(null); } },
+    { id:"accounts", Icon: Wallet,     label:"Akun",       onTab: () => { setTab("accounts"); setSubPage(null); } },
+    { id:"more",     Icon: MoreHorizontal, label:"Lainnya", onTab: () => { setTab("more"); setSubPage(null); } },
+  ];
 
-      {/* Bottom Tab Bar — hidden when sub-page is open */}
-      {!subPage && (
-        <nav className="tab-bar">
-          <div style={{ display:"flex", justifyContent:"space-around", alignItems:"center", padding:"8px 0 4px" }}>
-            {TAB_BAR.map(({ id, emoji, Icon, label, onTab }) => {
-              const active = tab === id;
-              return (
-                <button key={id} onClick={onTab || (() => { setTab(id); setSubPage(null); })}
-                  style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-                    minWidth:64, padding:"2px 0",
-                    color: active ? "var(--accent)" : "var(--sub)",
-                    fontSize:11, fontWeight:600, transition:"color .15s" }}>
-                  {emoji
-                    ? <span style={{ fontSize:20, lineHeight:1 }}>{emoji}</span>
-                    : <Icon size={21} strokeWidth={active ? 2.4 : 1.7} />}
-                  <span style={{ fontSize:10 }}>{label}</span>
-                </button>
-              );
-            })}
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="desktop-sidebar">
+        {/* Logo */}
+        <div style={{ padding:"0 20px 24px", borderBottom:"1px solid var(--border)" }}>
+          <p style={{ fontSize:20, fontWeight:900, color:"var(--accent)" }}>💰 My Money</p>
+          <p style={{ fontSize:11, color:"var(--sub)", marginTop:4 }}>Keuangan Pribadi & Bersama</p>
+        </div>
+
+        {/* Workspace badge */}
+        {hasHouseholds && (
+          <div style={{ padding:"14px 16px", borderBottom:"1px solid var(--border)" }}>
+            <button onClick={() => setShowWsModal(true)} style={{
+              width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 12px",
+              borderRadius:12, background: workspace ? "rgba(99,102,241,.12)" : "var(--surface2)",
+              border:`1.5px solid ${workspace ? "var(--brand)" : "var(--border)"}`,
+            }}>
+              <span style={{ fontSize:18 }}>{workspace ? "🏠" : "👤"}</span>
+              <div style={{ flex:1, textAlign:"left" }}>
+                <p style={{ fontSize:12, fontWeight:700, color: workspace ? "var(--brand)" : "var(--text)" }}>
+                  {workspace ? workspace.name : "Personal"}
+                </p>
+                <p style={{ fontSize:10, color:"var(--sub)" }}>Workspace aktif</p>
+              </div>
+              <ChevronDown size={13} color="var(--sub)" />
+            </button>
           </div>
+        )}
+
+        {/* Nav items */}
+        <nav style={{ padding:"12px 12px", flex:1 }}>
+          {NAV_ITEMS.map(({ id, emoji, Icon, label, onTab }) => {
+            const active = tab === id && !subPage;
+            return (
+              <button key={id} onClick={onTab}
+                style={{ width:"100%", display:"flex", alignItems:"center", gap:12,
+                  padding:"11px 12px", borderRadius:12, marginBottom:4,
+                  background: active ? "rgba(255,109,78,.1)" : "transparent",
+                  color: active ? "var(--accent)" : "var(--sub)",
+                  fontWeight: active ? 700 : 600, fontSize:14, transition:"all .15s" }}>
+                {emoji
+                  ? <span style={{ fontSize:18, width:22, textAlign:"center" }}>{emoji}</span>
+                  : <Icon size={18} strokeWidth={active ? 2.4 : 1.8} />}
+                {label}
+              </button>
+            );
+          })}
         </nav>
-      )}
+
+        {/* User info */}
+        {user && (
+          <div style={{ padding:"16px 20px", borderTop:"1px solid var(--border)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ width:34, height:34, borderRadius:10, background:"rgba(255,109,78,.15)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:14, fontWeight:800, color:"var(--accent)" }}>
+                {user.email?.[0]?.toUpperCase()}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <p style={{ fontSize:12, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {user.email}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </aside>
+
+      {/* Main content */}
+      <div className="app-frame">
+        <div style={{ paddingBottom: subPage ? 0 : "calc(60px + env(safe-area-inset-bottom,0px))" }}>
+          {renderContent()}
+        </div>
+
+        {/* Bottom Tab Bar — mobile only */}
+        {!subPage && (
+          <nav className="tab-bar">
+            <div style={{ display:"flex", justifyContent:"space-around", alignItems:"center", padding:"8px 0 4px" }}>
+              {TAB_BAR.map(({ id, emoji, Icon, label, onTab }) => {
+                const active = tab === id;
+                return (
+                  <button key={id} onClick={onTab || (() => { setTab(id); setSubPage(null); })}
+                    style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+                      minWidth:64, padding:"2px 0",
+                      color: active ? "var(--accent)" : "var(--sub)",
+                      fontSize:11, fontWeight:600, transition:"color .15s" }}>
+                    {emoji
+                      ? <span style={{ fontSize:20, lineHeight:1 }}>{emoji}</span>
+                      : <Icon size={21} strokeWidth={active ? 2.4 : 1.7} />}
+                    <span style={{ fontSize:10 }}>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        )}
+      </div>
 
       {/* Workspace switcher modal */}
       {showWsModal && (
@@ -401,7 +479,7 @@ export default function AppShell({ session, inviteToken }) {
           onSave={saveTx}
         />
       )}
-    </div>
+    </>
   );
 }
 
