@@ -21,8 +21,6 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
 
   async function submit(e) {
     e.preventDefault();
-    console.log("SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log("ANON_KEY set:", Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY));
     if (!hasSupabaseConfig) { setMsg({ text:"Konfigurasi Supabase belum ada.", ok:false }); return; }
     setBusy(true); setMsg({ text:"", ok:false });
 
