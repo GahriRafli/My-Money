@@ -326,8 +326,12 @@ function InviteBanner({ token, user, onDone, onDismiss }) {
         data = rpc.data;
       } else {
         const { data: d } = await supabase.from("household_members")
-          .select("*, households(name)").eq("invite_token", token).eq("status","pending").maybeSingle();
-        data = d;
+          .select("*").eq("invite_token", token).eq("status","pending").maybeSingle();
+        if (d) {
+          // Fetch household name terpisah
+          const { data: hh } = await supabase.from("households").select("name").eq("id", d.household_id).maybeSingle();
+          data = { ...d, households: hh };
+        }
       }
 
       if (data) {
