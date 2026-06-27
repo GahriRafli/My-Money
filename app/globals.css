@@ -150,6 +150,39 @@ textarea.field-input { height: auto; padding: 12px 14px; resize: none; }
 /* Tab bar */
 .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: var(--surface); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom, 4px); box-shadow: 0 -4px 24px var(--shadow); }
 
+/* ═══ PWA RESPONSIVE FRAME ═════════════════════════════════ */
+.app-frame {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+  background: var(--bg);
+}
+
+@media (min-width: 640px) {
+  body {
+    background: #0e0e14;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .app-frame {
+    min-height: 100dvh;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 80px rgba(0,0,0,0.6);
+  }
+  .tab-bar {
+    max-width: 480px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .modal-backdrop {
+    max-width: 480px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
 /* Pill toggle */
 .pill-toggle { display: flex; background: var(--surface2); border-radius: 12px; padding: 3px; gap: 2px; }
 .pill-btn { flex: 1; padding: 9px 4px; border-radius: 9px; font-size: 13px; font-weight: 600; text-align: center; color: var(--sub); transition: all .18s; white-space: nowrap; }

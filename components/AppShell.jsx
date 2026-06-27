@@ -232,7 +232,7 @@ export default function AppShell({ session, inviteToken }) {
   }
 
   return (
-    <div style={{ background:"var(--bg)", minHeight:"100dvh" }}>
+    <div className="app-frame">
       <div style={{ paddingBottom: subPage ? 0 : "calc(60px + env(safe-area-inset-bottom,0px))" }}>
         {renderContent()}
       </div>
@@ -273,8 +273,8 @@ export default function AppShell({ session, inviteToken }) {
       {/* Toast notification */}
       {toast && (
         <div style={{
-          position:"fixed", bottom: "calc(72px + env(safe-area-inset-bottom,0px))", left:"50%",
-          transform:"translateX(-50%)", zIndex:9999,
+          position:"fixed", bottom: "calc(72px + env(safe-area-inset-bottom,0px))",
+          left:"50%", transform:"translateX(-50%)", zIndex:9999,
           background: toast.type==="error" ? "var(--expense)" : "#10B981",
           color:"#fff", padding:"12px 20px", borderRadius:14,
           fontSize:13, fontWeight:600, maxWidth:"90vw", textAlign:"center",
@@ -315,16 +315,33 @@ function InviteBanner({ token, user, onDone, onDismiss }) {
   const [info,    setInfo]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
+  const [notFound,setNotFound]= useState(false);
 
   useEffect(() => {
     async function fetchInvite() {
-      const { data } = await supabase.from("household_members")
-        .select("*, households(name)").eq("invite_token", token).eq("status","pending").maybeSingle();
-      setInfo(data);
+      // First try RPC (bypasses RLS), fall back to direct query
+      let data = null;
+      const rpc = await supabase.rpc("get_invite_by_token", { p_token: token });
+      if (rpc.data) {
+        data = rpc.data;
+      } else {
+        const { data: d } = await supabase.from("household_members")
+          .select("*, households(name)").eq("invite_token", token).eq("status","pending").maybeSingle();
+        data = d;
+      }
+
+      if (data) {
+        setInfo(data);
+      } else if (!user) {
+        setInfo({ _needsLogin: true });
+      } else {
+        setNotFound(true);
+        setTimeout(() => onDismiss(), 3000);
+      }
       setLoading(false);
     }
     fetchInvite();
-  }, [token]);
+  }, [token, user?.id]);
 
   async function accept() {
     if (!user) { onDismiss(); return; }
@@ -344,17 +361,20 @@ function InviteBanner({ token, user, onDone, onDismiss }) {
   }
 
   if (loading) return null;
-  if (!info) return (
+
+  if (notFound) return (
     <div style={{
       position:"fixed", bottom:90, left:"50%", transform:"translateX(-50%)",
       zIndex:9999, padding:"12px 20px", borderRadius:14,
       background:"var(--expense)", color:"#fff", fontSize:13, fontWeight:600,
       textAlign:"center", boxShadow:"0 8px 32px rgba(0,0,0,.3)", maxWidth:"90vw",
+      animation:"fadeUp .2s ease",
     }}>
       Link undangan tidak valid atau sudah digunakan.
-      <button onClick={onDismiss} style={{ marginLeft:12, fontWeight:800, color:"#fff" }}>✕</button>
     </div>
   );
+
+  if (!info) return null;
 
   return (
     <div style={{
@@ -373,23 +393,26 @@ function InviteBanner({ token, user, onDone, onDismiss }) {
           Undangan Household
         </p>
         <p style={{ fontSize:14, color:"var(--sub)", textAlign:"center", lineHeight:1.7, marginBottom:24 }}>
-          Kamu diundang untuk bergabung ke{" "}
-          <b style={{ color:"var(--text)" }}>{info.households?.name}</b>
-          {" "}dengan akses <b style={{ color:"var(--accent)" }}>{info.access==="full"?"Full Access":"View Only"}</b>.
-          {!user && " Login terlebih dahulu untuk menerima undangan."}
+          {info._needsLogin ? (
+            <>Kamu punya undangan household. <b style={{ color:"var(--accent)" }}>Login</b> terlebih dahulu untuk melihat & menerima undangan.</>
+          ) : (
+            <>Kamu diundang untuk bergabung ke{" "}
+            <b style={{ color:"var(--text)" }}>{info.households?.name}</b>
+            {" "}dengan akses <b style={{ color:"var(--accent)" }}>{info.access==="full"?"Full Access":"View Only"}</b>.</>
+          )}
         </p>
         <div style={{ display:"flex", gap:12 }}>
           <button onClick={onDismiss}
             style={{ flex:1, height:52, borderRadius:14, border:"1px solid var(--border)",
               fontSize:15, fontWeight:700, color:"var(--sub)" }}>
-            Tolak
+            Tutup
           </button>
-          <button onClick={accept} disabled={joining || !user}
+          <button onClick={accept} disabled={joining || !user || info._needsLogin}
             style={{ flex:2, height:52, borderRadius:14,
-              background: user ? "var(--accent)" : "var(--surface2)",
+              background: (user && !info._needsLogin) ? "var(--accent)" : "var(--surface2)",
               color:"#fff", fontSize:15, fontWeight:800,
-              boxShadow: user ? "0 6px 20px rgba(99,102,241,.3)" : "none" }}>
-            {joining ? "Bergabung…" : user ? "Terima & Bergabung" : "Login dulu"}
+              boxShadow: (user && !info._needsLogin) ? "0 6px 20px rgba(99,102,241,.3)" : "none" }}>
+            {joining ? "Bergabung…" : (user && !info._needsLogin) ? "Terima & Bergabung" : "Login dulu"}
           </button>
         </div>
       </div>
