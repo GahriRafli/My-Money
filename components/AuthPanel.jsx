@@ -20,18 +20,35 @@ export default function AuthPanel() {
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [message, setMessage] = useState("");
+  const [msgType, setMsgType] = useState("error"); // "error" | "ok"
   const [loading, setLoading] = useState(false);
+
+  function showMsg(text, type = "error") {
+    setMessage(text);
+    setMsgType(type);
+  }
 
   async function submit(event) {
     event.preventDefault();
-    setMessage("");
+    showMsg("");
 
     if (!hasSupabaseConfig) {
-      setMessage("Isi .env.local dengan Supabase URL dan anon key dulu.");
+      showMsg("Isi .env.local dengan Supabase URL dan anon key dulu.");
       return;
     }
 
     setLoading(true);
+
+    if (mode === "forgot") {
+      const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
+        redirectTo: `${window.location.origin}/?reset=1`,
+      });
+      setLoading(false);
+      if (error) { showMsg(error.message); return; }
+      showMsg("Link reset password sudah dikirim ke email kamu. Cek inbox / spam.", "ok");
+      return;
+    }
+
     const result =
       mode === "login"
         ? await supabase.auth.signInWithPassword({
@@ -46,12 +63,12 @@ export default function AuthPanel() {
     setLoading(false);
 
     if (result.error) {
-      setMessage(result.error.message);
+      showMsg(result.error.message);
       return;
     }
 
     if (mode === "register") {
-      setMessage("Akun dibuat. Cek email jika konfirmasi aktif, lalu masuk.");
+      showMsg("Akun dibuat. Cek email jika konfirmasi aktif, lalu masuk.", "ok");
     }
   }
 
@@ -158,22 +175,33 @@ export default function AuthPanel() {
               </h2>
             </div>
 
-            <div className="mb-6 grid grid-cols-2 rounded-lg border border-line bg-white p-1 shadow-[0_10px_28px_rgba(23,32,51,0.05)]">
-              <button
-                type="button"
-                className={`rounded-md px-4 py-2.5 text-sm font-medium transition ${mode === "login" ? "bg-ink text-white shadow-sm" : "text-muted hover:text-ink"}`}
-                onClick={() => setMode("login")}
-              >
-                Masuk
-              </button>
-              <button
-                type="button"
-                className={`rounded-md px-4 py-2.5 text-sm font-medium transition ${mode === "register" ? "bg-ink text-white shadow-sm" : "text-muted hover:text-ink"}`}
-                onClick={() => setMode("register")}
-              >
-                Daftar
-              </button>
-            </div>
+            {/* Tab switcher — hidden when in forgot mode */}
+            {mode !== "forgot" && (
+              <div className="mb-6 grid grid-cols-2 rounded-lg border border-line bg-white p-1 shadow-[0_10px_28px_rgba(23,32,51,0.05)]">
+                <button
+                  type="button"
+                  className={`rounded-md px-4 py-2.5 text-sm font-medium transition ${mode === "login" ? "bg-ink text-white shadow-sm" : "text-muted hover:text-ink"}`}
+                  onClick={() => { setMode("login"); showMsg(""); }}
+                >
+                  Masuk
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-md px-4 py-2.5 text-sm font-medium transition ${mode === "register" ? "bg-ink text-white shadow-sm" : "text-muted hover:text-ink"}`}
+                  onClick={() => { setMode("register"); showMsg(""); }}
+                >
+                  Daftar
+                </button>
+              </div>
+            )}
+
+            {/* Forgot password heading */}
+            {mode === "forgot" && (
+              <div className="mb-6 rounded-xl border border-line bg-brand/5 p-4">
+                <p className="text-sm font-semibold text-brand">Reset Password</p>
+                <p className="mt-1 text-xs leading-5 text-muted">Masukkan email akunmu, kami akan kirim link untuk membuat password baru.</p>
+              </div>
+            )}
 
             <form className="space-y-4" onSubmit={submit}>
               {mode === "register" && (
@@ -199,33 +227,70 @@ export default function AuthPanel() {
                 />
               </Field>
 
-              <Field icon={<Lock size={18} />} label="Password">
-                <div className="flex h-full min-w-0 flex-1 items-center">
-                  <input
-                    className="field-input"
-                    type={showPassword ? "text" : "password"}
-                    value={form.password}
-                    onChange={(event) => setForm({ ...form, password: event.target.value })}
-                    placeholder="Minimal 6 karakter"
-                    required
-                  />
+              {mode !== "forgot" && (
+                <Field icon={<Lock size={18} />} label="Password">
+                  <div className="flex h-full min-w-0 flex-1 items-center">
+                    <input
+                      className="field-input"
+                      type={showPassword ? "text" : "password"}
+                      value={form.password}
+                      onChange={(event) => setForm({ ...form, password: event.target.value })}
+                      placeholder="Minimal 6 karakter"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="mr-3 grid h-8 w-8 place-items-center rounded-md text-muted transition hover:bg-canvas hover:text-ink"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label="Tampilkan password"
+                    >
+                      <Eye size={18} />
+                    </button>
+                  </div>
+                </Field>
+              )}
+
+              {/* Lupa password link */}
+              {mode === "login" && (
+                <div className="text-right">
                   <button
                     type="button"
-                    className="mr-3 grid h-8 w-8 place-items-center rounded-md text-muted transition hover:bg-canvas hover:text-ink"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label="Tampilkan password"
+                    className="text-xs font-medium text-brand hover:underline"
+                    onClick={() => { setMode("forgot"); showMsg(""); }}
                   >
-                    <Eye size={18} />
+                    Lupa password?
                   </button>
                 </div>
-              </Field>
+              )}
 
-              {message && <p className="rounded-lg bg-coral/10 px-4 py-3 text-sm text-coral">{message}</p>}
+              {message && (
+                <p className={`rounded-lg px-4 py-3 text-sm ${msgType === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-coral/10 text-coral"}`}>
+                  {message}
+                </p>
+              )}
 
-              <button className="group flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand font-semibold text-white shadow-soft transition hover:bg-[#18745F]" disabled={loading}>
-                {loading ? "Memproses..." : mode === "login" ? "Masuk" : "Buat akun"}
+              <button
+                className="group flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand font-semibold text-white shadow-soft transition hover:bg-[#18745F]"
+                disabled={loading}
+              >
+                {loading
+                  ? "Memproses..."
+                  : mode === "login" ? "Masuk"
+                  : mode === "register" ? "Buat akun"
+                  : "Kirim Link Reset"}
                 {!loading && <ArrowUpRight size={17} className="transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />}
               </button>
+
+              {/* Kembali ke login */}
+              {mode === "forgot" && (
+                <button
+                  type="button"
+                  className="w-full text-center text-sm text-muted hover:text-ink"
+                  onClick={() => { setMode("login"); showMsg(""); }}
+                >
+                  ← Kembali ke halaman masuk
+                </button>
+              )}
             </form>
           </div>
         </section>
