@@ -39,7 +39,11 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
       : await supabase.auth.signUp({ email:form.email, password:form.password, options:{ data:{ full_name:form.name } } });
     setBusy(false);
     if (res.error) {
-      const errText = res.error.message || res.error.error_description || res.error.status || "Terjadi kesalahan, coba lagi.";
+      console.error("Auth error:", JSON.stringify(res.error));
+      const e = res.error;
+      const errText = e?.message || e?.error_description || e?.msg
+        || (typeof e === "string" ? e : null)
+        || "Terjadi kesalahan. Cek konsol browser.";
       setMsg({ text: String(errText), ok:false });
       return;
     }
