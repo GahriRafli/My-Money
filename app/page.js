@@ -21,8 +21,20 @@ export default function HomePage() {
     const rp     = params.get("reset_passcode");
     if (token) setInviteToken(token);
     if (ws)    setInitialWorkspaceId(ws);
-    if (rp)  { removePasscode(); setResetPasscode(true); }
-    if (token || ws || rp) window.history.replaceState({}, "", window.location.pathname);
+    if (rp) {
+      window.history.replaceState({}, "", window.location.pathname);
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      fetch(`${supabaseUrl}/functions/v1/passcode-reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+        body: JSON.stringify({ action: "verify", token: rp }),
+      }).then(r => r.json()).then(data => {
+        if (data.ok) { removePasscode(); setResetPasscode(true); }
+        else alert("Link reset tidak valid atau sudah kadaluarsa.");
+      }).catch(() => alert("Gagal validasi token. Coba lagi."));
+    }
+    if (token || ws) window.history.replaceState({}, "", window.location.pathname);
 
     // Show lock screen if passcode is set
     if (hasPasscode()) setLocked(true);
