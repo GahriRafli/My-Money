@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Delete } from "lucide-react";
+import { Delete, Mail } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const STORAGE_KEY = "mymoney_passcode";
 
@@ -124,11 +125,15 @@ export default function PasscodeLock({ onUnlock }) {
 
 /* ── Setup / Change passcode modal ── */
 export function PasscodeSetup({ mode = "set", onDone, onClose }) {
-  const [step,   setStep]   = useState(mode === "disable" ? "confirm" : "enter");
-  const [first,  setFirst]  = useState("");
-  const [digits, setDigits] = useState([]);
-  const [shake,  setShake]  = useState(false);
-  const [msg,    setMsg]    = useState("");
+  const [step,        setStep]        = useState(mode === "disable" ? "confirm" : "enter");
+  const [first,       setFirst]       = useState("");
+  const [digits,      setDigits]      = useState([]);
+  const [shake,       setShake]       = useState(false);
+  const [msg,         setMsg]         = useState("");
+  const [showForgot,  setShowForgot]  = useState(false);
+  const [email,       setEmail]       = useState("");
+  const [forgotBusy,  setForgotBusy]  = useState(false);
+  const [forgotMsg,   setForgotMsg]   = useState({ text:"", ok:false });
 
   const title = {
     enter:   mode === "change" ? "Masukkan passcode lama" : "Buat passcode baru",
@@ -164,6 +169,19 @@ export function PasscodeSetup({ mode = "set", onDone, onClose }) {
 
   function bad(m) { setMsg(m); setShake(true); setTimeout(() => { setShake(false); setDigits([]); setMsg(""); }, 700); }
 
+  async function sendForgotEmail(e) {
+    e.preventDefault();
+    setForgotBusy(true);
+    setForgotMsg({ text:"", ok:false });
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${siteUrl}/?reset_passcode=1`,
+    });
+    setForgotBusy(false);
+    if (error) setForgotMsg({ text: error.message, ok:false });
+    else setForgotMsg({ text:"Link reset dikirim! Cek email kamu.", ok:true });
+  }
+
   function press(key) {
     if (key === "del") { setDigits(d => d.slice(0,-1)); return; }
     if (key === "" || digits.length >= 4) return;
@@ -175,7 +193,7 @@ export function PasscodeSetup({ mode = "set", onDone, onClose }) {
     : step === "new" ? "Buat passcode baru"
     : "Ulangi passcode baru";
 
-  return (
+  return (<>
     <div className="modal-backdrop" onClick={e => e.target===e.currentTarget && onClose()}>
       <div className="modal-sheet" style={{ paddingBottom:"env(safe-area-inset-bottom,24px)" }}>
         <div style={{ display:"flex", justifyContent:"center", padding:"12px 0 8px" }}>
@@ -220,6 +238,14 @@ export function PasscodeSetup({ mode = "set", onDone, onClose }) {
           <button onClick={onClose} style={{ marginTop:20, fontSize:13, color:"var(--sub)", fontWeight:600 }}>
             Batal
           </button>
+
+          {/* Lupa passcode — hanya tampil di mode change, step enter */}
+          {mode === "change" && step === "enter" && (
+            <button onClick={() => setShowForgot(true)}
+              style={{ marginTop:8, fontSize:12, color:"var(--brand)", fontWeight:600 }}>
+              Lupa passcode?
+            </button>
+          )}
         </div>
 
         <style>{`
@@ -233,5 +259,59 @@ export function PasscodeSetup({ mode = "set", onDone, onClose }) {
         `}</style>
       </div>
     </div>
-  );
+
+    {/* Forgot passcode modal */}
+
+    {showForgot && (
+      <div className="modal-backdrop" onClick={e => e.target===e.currentTarget && setShowForgot(false)}>
+        <div className="modal-sheet" style={{ paddingBottom:"env(safe-area-inset-bottom,24px)" }}>
+          <div style={{ display:"flex", justifyContent:"center", padding:"12px 0 8px" }}>
+            <div style={{ width:36, height:4, borderRadius:99, background:"var(--border)" }}/>
+          </div>
+          <div style={{ padding:"8px 20px 28px" }}>
+            <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}>
+              <div style={{ width:56, height:56, borderRadius:16,
+                background:"rgba(99,102,241,.12)",
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>
+                📧
+              </div>
+            </div>
+            <p style={{ fontSize:17, fontWeight:800, textAlign:"center", marginBottom:6 }}>Lupa Passcode?</p>
+            <p style={{ fontSize:13, color:"var(--sub)", textAlign:"center", marginBottom:20 }}>
+              Masukkan email akun kamu. Kami akan kirim link untuk reset passcode.
+            </p>
+
+            <form onSubmit={sendForgotEmail} style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              <div className="field-wrap">
+                <span style={{ marginLeft:14, color:"var(--sub)", flexShrink:0 }}>
+                  <Mail size={17}/>
+                </span>
+                <input className="field-input" type="email" placeholder="nama@email.com" required
+                  value={email} onChange={e => setEmail(e.target.value)} />
+              </div>
+
+              {forgotMsg.text && (
+                <p style={{ fontSize:13, borderRadius:12, padding:"10px 14px",
+                  background: forgotMsg.ok ? "rgba(0,184,148,.12)" : "rgba(255,92,92,.12)",
+                  color: forgotMsg.ok ? "#00B894" : "var(--expense)" }}>
+                  {forgotMsg.text}
+                </p>
+              )}
+
+              <button type="submit" disabled={forgotBusy}
+                style={{ height:50, borderRadius:14, background:"var(--brand)", color:"#fff",
+                  fontWeight:800, fontSize:15, opacity: forgotBusy ? 0.7 : 1 }}>
+                {forgotBusy ? "Mengirim…" : "Kirim Link Reset"}
+              </button>
+
+              <button type="button" onClick={() => setShowForgot(false)}
+                style={{ fontSize:13, color:"var(--sub)", fontWeight:600, textAlign:"center" }}>
+                ← Kembali
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    )}
+  </>);
 }

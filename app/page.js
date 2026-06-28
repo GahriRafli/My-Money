@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import ResetPasswordPage from "@/components/ResetPasswordPage";
-import PasscodeLock, { hasPasscode } from "@/components/PasscodeLock";
+import PasscodeLock, { hasPasscode, removePasscode, PasscodeSetup } from "@/components/PasscodeLock";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
 export default function HomePage() {
@@ -12,14 +12,17 @@ export default function HomePage() {
   const [isRecovery,         setIsRecovery]         = useState(false);
   const [initialWorkspaceId, setInitialWorkspaceId] = useState(null);
   const [locked,             setLocked]             = useState(false);
+  const [resetPasscode,      setResetPasscode]      = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token  = params.get("invite");
     const ws     = params.get("workspace");
+    const rp     = params.get("reset_passcode");
     if (token) setInviteToken(token);
     if (ws)    setInitialWorkspaceId(ws);
-    if (token || ws) window.history.replaceState({}, "", window.location.pathname);
+    if (rp)  { removePasscode(); setResetPasscode(true); }
+    if (token || ws || rp) window.history.replaceState({}, "", window.location.pathname);
 
     // Show lock screen if passcode is set
     if (hasPasscode()) setLocked(true);
@@ -52,6 +55,19 @@ export default function HomePage() {
 
   if (locked) {
     return <PasscodeLock onUnlock={() => setLocked(false)} />;
+  }
+
+  if (resetPasscode) {
+    return (
+      <>
+        <AppShell session={session} inviteToken={inviteToken} initialWorkspaceId={initialWorkspaceId} />
+        <PasscodeSetup
+          mode="set"
+          onDone={() => setResetPasscode(false)}
+          onClose={() => setResetPasscode(false)}
+        />
+      </>
+    );
   }
 
   if (isRecovery) {
