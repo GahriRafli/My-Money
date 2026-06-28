@@ -174,8 +174,9 @@ export function PasscodeSetup({ mode = "set", onDone, onClose }) {
     setForgotBusy(true);
     setForgotMsg({ text:"", ok:false });
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/?reset_passcode=1`,
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${siteUrl}/?reset_passcode=1` },
     });
     setForgotBusy(false);
     if (error) setForgotMsg({ text: error.message, ok:false });
