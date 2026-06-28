@@ -37,7 +37,7 @@ function applyTheme(t) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-export default function AppShell({ session, inviteToken }) {
+export default function AppShell({ session, inviteToken, initialWorkspaceId }) {
   const [tab,       setTab]       = useState("txs");
   const [subPage,   setSubPage]   = useState(null);
   const [showAdd,   setShowAdd]   = useState(false);
@@ -115,6 +115,12 @@ export default function AppShell({ session, inviteToken }) {
     }
     const allHh = [...(ownedHh||[]).map(h=>({...h, myAccess:"full"})), ...memberHh];
     setHouseholds(allHh);
+
+    // Auto-switch ke workspace dari notifikasi
+    if (initialWorkspaceId && !workspace) {
+      const target = allHh.find(h => h.id === initialWorkspaceId);
+      if (target) setWorkspace({ id: target.id, name: target.name, access: target.myAccess });
+    }
 
     await loadWorkspaceData();
     setLoading(false);

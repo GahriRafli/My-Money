@@ -6,17 +6,18 @@ import ResetPasswordPage from "@/components/ResetPasswordPage";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
 export default function HomePage() {
-  const [session,      setSession]      = useState(undefined);
-  const [inviteToken,  setInviteToken]  = useState(null);
-  const [isRecovery,   setIsRecovery]   = useState(false);
+  const [session,           setSession]           = useState(undefined);
+  const [inviteToken,       setInviteToken]       = useState(null);
+  const [isRecovery,        setIsRecovery]        = useState(false);
+  const [initialWorkspaceId, setInitialWorkspaceId] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token  = params.get("invite");
-    if (token) {
-      setInviteToken(token);
-      window.history.replaceState({}, "", window.location.pathname);
-    }
+    const ws     = params.get("workspace");
+    if (token) setInviteToken(token);
+    if (ws)    setInitialWorkspaceId(ws);
+    if (token || ws) window.history.replaceState({}, "", window.location.pathname);
 
     if (!hasSupabaseConfig) { setSession(null); return; }
 
@@ -48,5 +49,5 @@ export default function HomePage() {
     return <ResetPasswordPage onDone={() => { setIsRecovery(false); setSession(null); }} />;
   }
 
-  return <AppShell session={session} inviteToken={inviteToken} />;
+  return <AppShell session={session} inviteToken={inviteToken} initialWorkspaceId={initialWorkspaceId} />;
 }
