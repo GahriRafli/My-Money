@@ -23,8 +23,8 @@ export default function AccountsTab({ wallets, loading, user, workspace, onRefre
     return Object.entries(map);
   }, [wallets]);
 
-  const assets = wallets.filter(w => w.type !== "card").reduce((s,w)=>s+Number(w.balance||0),0);
-  const liab   = wallets.filter(w => w.type === "card").reduce((s,w)=>s+Number(w.balance||0),0);
+  const assets = wallets.filter(w => Number(w.balance||0) >= 0).reduce((s,w)=>s+Number(w.balance||0),0);
+  const liab   = wallets.filter(w => Number(w.balance||0) < 0).reduce((s,w)=>s+Number(w.balance||0),0);
   const M = hideAmt ? "••••••" : null;
 
   async function confirmDelete() {
@@ -55,11 +55,13 @@ export default function AccountsTab({ wallets, loading, user, workspace, onRefre
         </div>
         <div style={{ textAlign:"center" }}>
           <p style={{ fontSize:10, color:"var(--sub)", marginBottom:4 }}>Liabilities</p>
-          <p style={{ fontSize:13, fontWeight:800, color:"var(--expense)" }}>{liab>0 ? `-${M||fmt(liab)}` : (M||"Rp 0")}</p>
+          <p style={{ fontSize:13, fontWeight:800, color: liab<0 ? "var(--expense)" : "var(--sub)" }}>
+            {M || (liab < 0 ? fmt(liab) : "Rp 0")}
+          </p>
         </div>
         <div style={{ textAlign:"right" }}>
           <p style={{ fontSize:10, color:"var(--sub)", marginBottom:4 }}>Total</p>
-          <p style={{ fontSize:13, fontWeight:800 }}>{M || fmt(assets - liab)}</p>
+          <p style={{ fontSize:13, fontWeight:800 }}>{M || fmt(assets + liab)}</p>
         </div>
       </div>
 
@@ -78,7 +80,9 @@ export default function AccountsTab({ wallets, loading, user, workspace, onRefre
             <div style={{ display:"flex", justifyContent:"space-between", padding:"12px 16px 6px",
               borderBottom:"1px solid var(--border)" }}>
               <p style={{ fontSize:13, color:"var(--sub)", fontWeight:600 }}>{info.label}</p>
-              <p style={{ fontSize:13, color:"var(--income)", fontWeight:700 }}>{M || fmt(groupTotal)}</p>
+              <p style={{ fontSize:13, fontWeight:700, color: groupTotal < 0 ? "var(--expense)" : "var(--income)" }}>
+                {M || fmt(groupTotal)}
+              </p>
             </div>
             {list.map(w => (
               <button key={w.id} onClick={() => setSelected(w)}
