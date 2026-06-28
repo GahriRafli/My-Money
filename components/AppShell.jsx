@@ -295,12 +295,15 @@ export default function AppShell({ session, inviteToken, initialWorkspaceId }) {
         </button>
         {workspace && pushSupported && (
           <button
-            onClick={() => pushSubscribed ? pushUnsubscribe() : pushSubscribe()}
-            disabled={pushLoading}
+            onClick={() => {
+              console.log("[Bell] tapped, subscribed:", pushSubscribed, "loading:", pushLoading);
+              if (pushSubscribed) pushUnsubscribe();
+              else pushSubscribe();
+            }}
             title={pushSubscribed ? "Matikan notifikasi" : "Aktifkan notifikasi"}
             style={{ padding:"8px 14px", color: pushSubscribed ? "var(--brand)" : "var(--sub)",
               opacity: pushLoading ? 0.5 : 1 }}>
-            {pushSubscribed ? <Bell size={16}/> : <BellOff size={16}/>}
+            {pushLoading ? "⏳" : pushSubscribed ? <Bell size={16}/> : <BellOff size={16}/>}
           </button>
         )}
       </div>
