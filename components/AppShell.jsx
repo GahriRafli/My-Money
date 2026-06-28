@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bell, BellOff, ChevronDown, MoreHorizontal, TrendingUp, Wallet } from "lucide-react";
 import { supabase, hasSupabaseConfig } from "@/lib/supabase";
-import { usePushNotification } from "@/lib/usePushNotification";
+import { usePushNotification, subscribeAllHouseholds } from "@/lib/usePushNotification";
 import { monthKey } from "@/lib/utils";
 import { EXP_CATS, INC_CATS } from "@/lib/constants";
 
@@ -115,6 +115,11 @@ export default function AppShell({ session, inviteToken, initialWorkspaceId }) {
     }
     const allHh = [...(ownedHh||[]).map(h=>({...h, myAccess:"full"})), ...memberHh];
     setHouseholds(allHh);
+
+    // Auto-subscribe push ke semua household sekaligus
+    if (allHh.length > 0) {
+      subscribeAllHouseholds(user, allHh.map(h => h.id));
+    }
 
     // Auto-switch ke workspace dari notifikasi
     if (initialWorkspaceId && !workspace) {
