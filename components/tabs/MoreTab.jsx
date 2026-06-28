@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRight, BadgeCheck, ChevronRight, Eye, EyeOff, Lock, LogIn, LogOut, Mail, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { hasSupabaseConfig } from "@/lib/supabase";
+import { PasscodeSetup, hasPasscode } from "@/components/PasscodeLock";
 
 const MENU = [
   { id:"budget",    icon:"🎯", label:"Anggaran",            sub:"Kelola budget bulanan"         },
@@ -13,11 +14,16 @@ const MENU = [
 ];
 
 export default function MoreTab({ user, profile, isGuest, onNavigate }) {
-  const [mode,   setMode]   = useState("login");
-  const [form,   setForm]   = useState({ name:"", email:"", password:"" });
-  const [showPw, setShowPw] = useState(false);
-  const [msg,    setMsg]    = useState({ text:"", ok:false });
-  const [busy,   setBusy]   = useState(false);
+  const [mode,         setMode]         = useState("login");
+  const [form,         setForm]         = useState({ name:"", email:"", password:"" });
+  const [showPw,       setShowPw]       = useState(false);
+  const [msg,          setMsg]          = useState({ text:"", ok:false });
+  const [busy,         setBusy]         = useState(false);
+  const [passcodeOn,   setPasscodeOn]   = useState(false);
+  const [passcodeModal,setPasscodeModal]= useState(null); // "set"|"change"|"disable"
+  const [passcodeMsg,  setPasscodeMsg]  = useState("");
+
+  useEffect(() => { setPasscodeOn(hasPasscode()); }, []);
 
   async function submit(e) {
     e.preventDefault();
@@ -176,6 +182,63 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
           ))}
         </div>
 
+        {/* Passcode */}
+        <div className="card" style={{ overflow:"hidden", marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px",
+            borderBottom: passcodeOn ? "1px solid var(--border)" : "none" }}>
+            <div style={{ width:36, height:36, borderRadius:10, background:"var(--surface2)",
+              display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
+              🔐
+            </div>
+            <div style={{ flex:1 }}>
+              <p style={{ fontSize:13, fontWeight:700 }}>Passcode</p>
+              <p style={{ fontSize:11, color:"var(--sub)", marginTop:2 }}>
+                {passcodeOn ? "Aktif — kunci app dengan 4 digit" : "Nonaktif — tap untuk mengaktifkan"}
+              </p>
+            </div>
+            <button onClick={() => setPasscodeModal(passcodeOn ? null : "set")}
+              style={{
+                width:44, height:26, borderRadius:99, position:"relative",
+                background: passcodeOn ? "var(--brand)" : "var(--border)",
+                transition:"background 0.2s", flexShrink:0,
+              }}
+              onClickCapture={() => !passcodeOn && setPasscodeModal("set")}
+              onClick={() => passcodeOn && setPasscodeModal("disable")}
+            >
+              <div style={{
+                width:20, height:20, borderRadius:"50%", background:"white",
+                position:"absolute", top:3,
+                left: passcodeOn ? 20 : 2,
+                transition:"left 0.2s",
+                boxShadow:"0 1px 4px rgba(0,0,0,.25)",
+              }}/>
+            </button>
+          </div>
+          {passcodeOn && (
+            <button onClick={() => setPasscodeModal("change")}
+              style={{ width:"100%", display:"flex", alignItems:"center", gap:12,
+                padding:"14px 16px", textAlign:"left" }}>
+              <div style={{ width:36, height:36, borderRadius:10, background:"var(--surface2)",
+                display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <Lock size={16} color="var(--sub)"/>
+              </div>
+              <div style={{ flex:1 }}>
+                <p style={{ fontSize:13, fontWeight:700 }}>Ubah Passcode</p>
+                <p style={{ fontSize:11, color:"var(--sub)", marginTop:2 }}>Ganti passcode yang aktif</p>
+              </div>
+              <ChevronRight size={16} style={{ color:"var(--sub)" }}/>
+            </button>
+          )}
+        </div>
+
+        {passcodeMsg && (
+          <div style={{ background:"rgba(0,184,148,.12)", border:"1px solid rgba(0,184,148,.2)",
+            borderRadius:12, padding:"10px 14px", marginBottom:12, fontSize:13,
+            color:"#00B894", fontWeight:600 }}>
+            {passcodeMsg}
+          </div>
+        )}
+
         {/* Sign out */}
         {!isGuest && (
           <button onClick={() => supabase.auth.signOut()}
@@ -190,6 +253,19 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
           My Money v1.0.0
         </p>
       </div>
+
+      {passcodeModal && (
+        <PasscodeSetup
+          mode={passcodeModal}
+          onDone={(msg) => {
+            setPasscodeOn(hasPasscode());
+            setPasscodeModal(null);
+            setPasscodeMsg(msg);
+            setTimeout(() => setPasscodeMsg(""), 3000);
+          }}
+          onClose={() => setPasscodeModal(null)}
+        />
+      )}
     </div>
   );
 }

@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import ResetPasswordPage from "@/components/ResetPasswordPage";
+import PasscodeLock, { hasPasscode } from "@/components/PasscodeLock";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
 export default function HomePage() {
-  const [session,           setSession]           = useState(undefined);
-  const [inviteToken,       setInviteToken]       = useState(null);
-  const [isRecovery,        setIsRecovery]        = useState(false);
+  const [session,            setSession]            = useState(undefined);
+  const [inviteToken,        setInviteToken]        = useState(null);
+  const [isRecovery,         setIsRecovery]         = useState(false);
   const [initialWorkspaceId, setInitialWorkspaceId] = useState(null);
+  const [locked,             setLocked]             = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -18,6 +20,9 @@ export default function HomePage() {
     if (token) setInviteToken(token);
     if (ws)    setInitialWorkspaceId(ws);
     if (token || ws) window.history.replaceState({}, "", window.location.pathname);
+
+    // Show lock screen if passcode is set
+    if (hasPasscode()) setLocked(true);
 
     if (!hasSupabaseConfig) { setSession(null); return; }
 
@@ -43,6 +48,10 @@ export default function HomePage() {
           animation:"spin 0.7s linear infinite" }} />
       </div>
     );
+  }
+
+  if (locked) {
+    return <PasscodeLock onUnlock={() => setLocked(false)} />;
   }
 
   if (isRecovery) {
