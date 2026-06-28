@@ -173,24 +173,14 @@ export function PasscodeSetup({ mode = "set", onDone, onClose }) {
     e.preventDefault();
     setForgotBusy(true);
     setForgotMsg({ text:"", ok:false });
-    try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      const res = await fetch(`${supabaseUrl}/functions/v1/passcode-reset`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${supabaseKey}`,
-        },
-        body: JSON.stringify({ action: "send", email }),
-      });
-      const data = await res.json();
-      if (!res.ok) setForgotMsg({ text: data.error || "Gagal kirim email.", ok:false });
-      else setForgotMsg({ text:"Link reset dikirim! Cek email kamu.", ok:true });
-    } catch {
-      setForgotMsg({ text:"Gagal kirim email. Coba lagi.", ok:false });
-    }
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${siteUrl}/?reset_passcode=1` },
+    });
     setForgotBusy(false);
+    if (error) setForgotMsg({ text: error.message, ok:false });
+    else setForgotMsg({ text:"Link reset dikirim! Cek email kamu.", ok:true });
   }
 
   function press(key) {

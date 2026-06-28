@@ -23,16 +23,8 @@ export default function HomePage() {
     if (ws)    setInitialWorkspaceId(ws);
     if (rp) {
       window.history.replaceState({}, "", window.location.pathname);
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      fetch(`${supabaseUrl}/functions/v1/passcode-reset`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
-        body: JSON.stringify({ action: "verify", token: rp }),
-      }).then(r => r.json()).then(data => {
-        if (data.ok) { removePasscode(); setResetPasscode(true); }
-        else alert("Link reset tidak valid atau sudah kadaluarsa.");
-      }).catch(() => alert("Gagal validasi token. Coba lagi."));
+      removePasscode();
+      setResetPasscode(true);
     }
     if (token || ws) window.history.replaceState({}, "", window.location.pathname);
 
