@@ -238,6 +238,8 @@ export default function AppShell({ session, inviteToken, initialWorkspaceId }) {
       setTxs(p => p.filter(t => t.id !== tx.id));
       return;
     }
+    // Tandai siapa yang menghapus sebelum delete (untuk notifikasi)
+    await supabase.from("transactions").update({ deleted_by: user.id }).eq("id", tx.id);
     const { error } = await supabase.from("transactions").delete().eq("id", tx.id);
     if (error) { showToast("Gagal hapus: " + error.message); return; }
     setTxs(p => p.filter(t => t.id !== tx.id));
