@@ -1,7 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="92" fill="#172033"/>
-  <path d="M128 168c0-26.5 21.5-48 48-48h160c26.5 0 48 21.5 48 48v176c0 26.5-21.5 48-48 48H176c-26.5 0-48-21.5-48-48V168Z" fill="#1F8A70"/>
-  <path d="M168 184h176v40H168v-40Zm0 72h176v40H168v-40Zm0 72h112v40H168v-40Z" fill="#F6F7F2"/>
-  <circle cx="344" cy="348" r="56" fill="#F6A733"/>
-  <path d="M328 350c0 13.3 10.7 24 24 24h8" stroke="#172033" stroke-width="22" stroke-linecap="round"/>
+  <!-- Background solid -->
+  <rect width="512" height="512" rx="112" fill="#5B5BD6"/>
+
+  <!-- Card body -->
+  <rect x="76" y="148" width="360" height="216" rx="24" fill="#7C7CEB" opacity="0.6"/>
+  <rect x="76" y="148" width="360" height="216" rx="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+
+  <!-- Card top stripe -->
+  <rect x="76" y="148" width="360" height="70" rx="24" fill="rgba(255,255,255,0.12)"/>
+  <rect x="76" y="193" width="360" height="25" fill="rgba(255,255,255,0.12)"/>
+
+  <!-- Chip -->
+  <rect x="112" y="166" width="54" height="40" rx="8" fill="#F5C518"/>
+  <rect x="112" y="166" width="54" height="40" rx="8" fill="none" stroke="#C9A000" stroke-width="1.5"/>
+  <line x1="139" y1="166" x2="139" y2="206" stroke="#C9A000" stroke-width="1.5"/>
+  <line x1="112" y1="182" x2="166" y2="182" stroke="#C9A000" stroke-width="1.5"/>
+  <line x1="112" y1="192" x2="166" y2="192" stroke="#C9A000" stroke-width="1.5"/>
+
+  <!-- Card number dots row 1 -->
+  <circle cx="126" cy="268" r="6" fill="white" opacity="0.85"/>
+  <circle cx="144" cy="268" r="6" fill="white" opacity="0.85"/>
+  <circle cx="162" cy="268" r="6" fill="white" opacity="0.85"/>
+  <circle cx="180" cy="268" r="6" fill="white" opacity="0.85"/>
+
+  <circle cx="210" cy="268" r="6" fill="white" opacity="0.85"/>
+  <circle cx="228" cy="268" r="6" fill="white" opacity="0.85"/>
+  <circle cx="246" cy="268" r="6" fill="white" opacity="0.85"/>
+  <circle cx="264" cy="268" r="6" fill="white" opacity="0.85"/>
+
+  <circle cx="294" cy="268" r="6" fill="white" opacity="0.85"/>
+  <circle cx="312" cy="268" r="6" fill="white" opacity="0.85"/>
+  <circle cx="330" cy="268" r="6" fill="white" opacity="0.85"/>
+  <circle cx="348" cy="268" r="6" fill="white" opacity="0.85"/>
+
+  <!-- Name bar -->
+  <rect x="112" y="308" width="130" height="10" rx="5" fill="rgba(255,255,255,0.45)"/>
+  <rect x="112" y="326" width="88" height="8" rx="4" fill="rgba(255,255,255,0.25)"/>
+
+  <!-- Rp symbol -->
+  <text x="394" y="342" font-family="Georgia,serif" font-size="38" font-weight="bold" fill="rgba(255,255,255,0.92)" text-anchor="middle">Rp</text>
+
+  <!-- Small coin bottom right accent -->
+  <circle cx="404" cy="390" r="28" fill="#F5C518" opacity="0.9"/>
+  <text x="404" y="400" font-family="Arial,sans-serif" font-size="24" font-weight="bold" fill="#7A5A00" text-anchor="middle">$</text>
 </svg>
