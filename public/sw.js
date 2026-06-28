@@ -53,6 +53,17 @@ self.addEventListener("push", (event) => {
   );
 });
 
+// Subscription hilang (PWA uninstall / cache clear) — beritahu app untuk cleanup DB
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        client.postMessage({ type: "PUSH_SUBSCRIPTION_LOST" });
+      }
+    })
+  );
+});
+
 // Click notification → open app
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
