@@ -182,8 +182,8 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
           ))}
         </div>
 
-        {/* Passcode */}
-        <div className="card" style={{ overflow:"hidden", marginBottom:16 }}>
+        {/* Passcode — hanya untuk user yang sudah login */}
+        {!isGuest && <div className="card" style={{ overflow:"hidden", marginBottom:16 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px",
             borderBottom: passcodeOn ? "1px solid var(--border)" : "none" }}>
             <div style={{ width:36, height:36, borderRadius:10, background:"var(--surface2)",
@@ -229,7 +229,7 @@ export default function MoreTab({ user, profile, isGuest, onNavigate }) {
               <ChevronRight size={16} style={{ color:"var(--sub)" }}/>
             </button>
           )}
-        </div>
+        </div>}
 
         {passcodeMsg && (
           <div style={{ background:"rgba(0,184,148,.12)", border:"1px solid rgba(0,184,148,.2)",
